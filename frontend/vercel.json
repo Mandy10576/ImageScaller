@@ -1,18 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "http://3.109.122.52:5000/api/$1"
-    },
-    {
-      "source": "/uploads/(.*)",
-      "destination": "http://3.109.122.52:5000/uploads/$1"
-    },
-    {
-      "source": "/outputs/(.*)",
-      "destination": "http://3.109.122.52:5000/outputs/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
