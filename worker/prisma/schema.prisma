@@ -1,0 +1,38 @@
+// Prisma Schema for AI Image Upscaler Worker
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImageJob {
+  id           String    @id @default(uuid())
+  originalName String    @map("original_name")
+  mimeType     String    @map("mime_type")
+  fileSize     Int       @map("file_size")
+  inputPath    String    @map("input_path")
+  outputPath   String?   @map("output_path")
+  scale        Int       @default(4)
+  status       JobStatus @default(PENDING)
+  progress     Int       @default(0)
+  errorMessage String?   @map("error_message")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  completedAt  DateTime? @map("completed_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("image_jobs")
+}

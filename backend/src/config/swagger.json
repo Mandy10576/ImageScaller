@@ -1,0 +1,107 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI Image Upscaler REST API",
+    "version": "1.0.0",
+    "description": "Production-grade asynchronous AI Image Upscaling service powered by BullMQ, Redis, PostgreSQL, and Real-ESRGAN."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check Endpoint",
+        "responses": {
+          "200": { "description": "System operational" },
+          "503": { "description": "One or more services unhealthy" }
+        }
+      }
+    },
+    "/jobs/upload": {
+      "post": {
+        "summary": "Upload an image and create upscaling job",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": { "type": "string", "format": "binary" },
+                  "scale": { "type": "integer", "default": 4 }
+                },
+                "required": ["image"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Job queued successfully" },
+          "400": { "description": "Invalid file or parameters" }
+        }
+      }
+    },
+    "/jobs": {
+      "get": {
+        "summary": "Get paginated list of upscaling jobs",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "PROCESSING", "COMPLETED", "FAILED"] } }
+        ],
+        "responses": {
+          "200": { "description": "Jobs retrieved successfully" }
+        }
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "summary": "Get job status by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Job found" },
+          "404": { "description": "Job not found" }
+        }
+      }
+    },
+    "/jobs/{id}/download": {
+      "get": {
+        "summary": "Download upscaled output image",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Image file binary stream" },
+          "400": { "description": "Job not completed yet" }
+        }
+      }
+    },
+    "/jobs/{id}": {
+      "delete": {
+        "summary": "Delete job and associated files",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Job deleted" }
+        }
+      }
+    },
+    "/jobs/{id}/retry": {
+      "post": {
+        "summary": "Retry a failed job",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Job re-queued successfully" }
+        }
+      }
+    }
+  }
+}

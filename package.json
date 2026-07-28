@@ -1,0 +1,10 @@
+{
+  "name": "ai-upscaler-monorepo",
+  "version": "1.0.0",
+  "description": "AI Image Upscaler Platform Workspace",
+  "scripts": {
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev",
+    "worker": "npm --prefix worker run dev"
+  }
+}
