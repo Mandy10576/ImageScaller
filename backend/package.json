@@ -2,7 +2,7 @@
   "name": "ai-upscaler-backend",
   "version": "1.0.0",
   "description": "Production-ready backend for AI Image Upscaler service",
-  "main": "src/app.js",
+  "main": "api/index.js",
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
