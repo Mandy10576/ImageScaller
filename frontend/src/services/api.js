@@ -1,4 +1,5 @@
-const API_BASE_URL = '/api/v1';
+const RAW_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = `${RAW_BASE.replace(/\/$/, '')}/api/v1`;
 
 const handleResponse = async (response, fallbackErrorMsg) => {
   const contentType = response.headers.get('content-type') || '';
