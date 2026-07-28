@@ -23,19 +23,23 @@ class JobService {
     });
 
     // 2. Add job to BullMQ queue
-    const bullJob = await imageUpscaleQueue.add(
-      'upscale-image',
-      {
-        jobId: jobRecord.id,
-        inputPath: jobRecord.inputPath,
-        scale: jobRecord.scale,
-      },
-      {
-        jobId: jobRecord.id, // Match BullMQ job ID with DB UUID
-      }
-    );
+    try {
+      const bullJob = await imageUpscaleQueue.add(
+        'upscale-image',
+        {
+          jobId: jobRecord.id,
+          inputPath: jobRecord.inputPath,
+          scale: jobRecord.scale,
+        },
+        {
+          jobId: jobRecord.id, // Match BullMQ job ID with DB UUID
+        }
+      );
 
-    logger.info(`Queued job ${jobRecord.id} in BullMQ (BullMQ ID: ${bullJob.id})`);
+      logger.info(`Queued job ${jobRecord.id} in BullMQ (BullMQ ID: ${bullJob.id})`);
+    } catch (queueErr) {
+      logger.error(`Could not queue job ${jobRecord.id} to BullMQ: ${queueErr.message}`);
+    }
 
     return jobRecord;
   }

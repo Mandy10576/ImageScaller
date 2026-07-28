@@ -1,6 +1,28 @@
 const API_BASE_URL = '/api/v1';
 
-export const uploadImageApi = async (file, scale = 4, onProgress) => {
+const handleResponse = async (response, fallbackErrorMsg) => {
+  const contentType = response.headers.get('content-type') || '';
+  
+  if (contentType.includes('application/json')) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || fallbackErrorMsg);
+    }
+    return data;
+  } else {
+    const text = await response.text();
+    if (!response.ok) {
+      const isHtmlError = text.includes('<!DOCTYPE html>') || text.includes('<html') || text.includes('Server Error');
+      const msg = isHtmlError
+        ? 'Server returned an error. Please verify backend environment variables & database connection.'
+        : text || fallbackErrorMsg;
+      throw new Error(msg);
+    }
+    return text;
+  }
+};
+
+export const uploadImageApi = async (file, scale = 4) => {
   const formData = new FormData();
   formData.append('image', file);
   formData.append('scale', scale);
@@ -10,12 +32,7 @@ export const uploadImageApi = async (file, scale = 4, onProgress) => {
     body: formData,
   });
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to upload image');
-  }
-
-  return data;
+  return handleResponse(response, 'Failed to upload image');
 };
 
 export const fetchJobsApi = async (page = 1, limit = 10, status = '') => {
@@ -23,52 +40,35 @@ export const fetchJobsApi = async (page = 1, limit = 10, status = '') => {
   if (status) url += `&status=${status}`;
 
   const response = await fetch(url);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch jobs');
-  }
-
-  return data;
+  return handleResponse(response, 'Failed to fetch jobs');
 };
 
 export const fetchJobByIdApi = async (id) => {
   const response = await fetch(`${API_BASE_URL}/jobs/${id}`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch job details');
-  }
-
-  return data;
+  return handleResponse(response, 'Failed to fetch job details');
 };
 
 export const deleteJobApi = async (id) => {
   const response = await fetch(`${API_BASE_URL}/jobs/${id}`, {
     method: 'DELETE',
   });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to delete job');
-  }
-
-  return data;
+  return handleResponse(response, 'Failed to delete job');
 };
 
 export const retryJobApi = async (id) => {
   const response = await fetch(`${API_BASE_URL}/jobs/${id}/retry`, {
     method: 'POST',
   });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to retry job');
-  }
-
-  return data;
+  return handleResponse(response, 'Failed to retry job');
 };
 
 export const checkHealthApi = async () => {
-  const response = await fetch(`${API_BASE_URL}/health`);
-  const data = await response.json();
-  return data;
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    return await handleResponse(response, 'Health check failed');
+  } catch (err) {
+    return { status: 'DOWN', message: err.message };
+  }
 };
 
 export const getDownloadUrl = (id) => `${API_BASE_URL}/jobs/${id}/download`;
