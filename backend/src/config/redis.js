@@ -7,6 +7,14 @@ const redisOptions = {
   password: config.redis.password,
   maxRetriesPerRequest: null, // Required by BullMQ
   enableReadyCheck: false,
+  connectTimeout: 5000,
+  retryStrategy(times) {
+    // Stop endless background connection attempts if Redis is unreachable
+    if (times > 3) {
+      return null;
+    }
+    return Math.min(times * 500, 2000);
+  },
 };
 
 const createRedisConnection = () => {
