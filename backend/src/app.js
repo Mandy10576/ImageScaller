@@ -53,7 +53,7 @@ app.use(errorHandler);
 
 // Start Server (Only if executed directly, not when imported as serverless function)
 if (require.main === module) {
-  const server = app.listen(config.port, () => {
+  const server = app.listen(config.port, '0.0.0.0', () => {
     logger.info('=====================================================');
     logger.info(`   AI Image Upscaler REST API Server Running         `);
     logger.info(`   Env: ${config.env} | Port: ${config.port}           `);
