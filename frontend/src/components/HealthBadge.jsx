@@ -19,13 +19,12 @@ const HealthBadge = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const isDbConnected = health.status === 'UP' || health.status === 'DEGRADED';
-  const dbStatusText = health.services?.database === 'healthy' ? 'DB Connected' : 'DB Disconnected';
+  const isDbConnected = health.services?.database === 'healthy';
 
   return (
     <div
       className="flex items-center space-x-2 bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1 text-xs"
-      title={`Database: ${health.services?.database || 'checking'} | Queue: ${health.services?.redis || 'checking'}`}
+      title={`Supabase Database: ${health.services?.database || 'checking'}`}
     >
       <span className="relative flex h-2 w-2">
         <span
@@ -42,7 +41,7 @@ const HealthBadge = () => {
       <span className="text-slate-300 font-medium">
         System Status:{' '}
         <strong className={isDbConnected ? 'text-emerald-400' : 'text-rose-400'}>
-          {isDbConnected ? dbStatusText : 'Offline'}
+          {isDbConnected ? 'Active (Supabase DB)' : 'Disconnected'}
         </strong>
       </span>
     </div>
