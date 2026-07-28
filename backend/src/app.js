@@ -51,25 +51,27 @@ app.use((req, res, next) => {
 app.use(errorConverter);
 app.use(errorHandler);
 
-// Start Server
-const server = app.listen(config.port, () => {
-  logger.info('=====================================================');
-  logger.info(`   AI Image Upscaler REST API Server Running         `);
-  logger.info(`   Env: ${config.env} | Port: ${config.port}           `);
-  logger.info(`   Swagger Docs: http://localhost:${config.port}/docs   `);
-  logger.info('=====================================================');
-});
-
-// Graceful Shutdown
-const gracefulShutdown = (signal) => {
-  logger.info(`Received ${signal}. Shutting down HTTP server...`);
-  server.close(() => {
-    logger.info('HTTP server closed cleanly. Exiting process.');
-    process.exit(0);
+// Start Server (Only if executed directly, not when imported as serverless function)
+if (require.main === module) {
+  const server = app.listen(config.port, () => {
+    logger.info('=====================================================');
+    logger.info(`   AI Image Upscaler REST API Server Running         `);
+    logger.info(`   Env: ${config.env} | Port: ${config.port}           `);
+    logger.info(`   Swagger Docs: http://localhost:${config.port}/docs   `);
+    logger.info('=====================================================');
   });
-};
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  // Graceful Shutdown
+  const gracefulShutdown = (signal) => {
+    logger.info(`Received ${signal}. Shutting down HTTP server...`);
+    server.close(() => {
+      logger.info('HTTP server closed cleanly. Exiting process.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
 
 module.exports = app;
