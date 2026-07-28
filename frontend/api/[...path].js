@@ -2,7 +2,7 @@ import http from 'http';
 
 export const config = {
   api: {
-    bodyParser: false, // Disable Vercel bodyParser to stream raw multipart file uploads to EC2
+    bodyParser: false, // Disable Vercel bodyParser to stream raw file uploads to EC2
   },
 };
 
@@ -10,18 +10,24 @@ export default function handler(req, res) {
   const ec2Host = '3.109.122.52';
   const ec2Port = 5000;
 
-  // Preserve request URL path
   const targetPath = req.url.startsWith('/api') ? req.url : `/api${req.url}`;
+
+  // Filter headers to prevent socket hangup & connection pool corruption
+  const headers = {};
+  for (const [key, val] of Object.entries(req.headers)) {
+    if (!['host', 'connection'].includes(key.toLowerCase())) {
+      headers[key] = val;
+    }
+  }
+  headers['host'] = `${ec2Host}:${ec2Port}`;
 
   const options = {
     hostname: ec2Host,
     port: ec2Port,
     path: targetPath,
     method: req.method,
-    headers: {
-      ...req.headers,
-      host: `${ec2Host}:${ec2Port}`,
-    },
+    headers,
+    timeout: 30000,
   };
 
   const proxyReq = http.request(options, (proxyRes) => {
@@ -30,12 +36,19 @@ export default function handler(req, res) {
   });
 
   proxyReq.on('error', (err) => {
-    console.error('Vercel EC2 Proxy Error:', err);
-    res.status(502).json({
-      error: 'EC2 Backend Connection Failed',
-      message: err.message,
-    });
+    console.error('Vercel EC2 Proxy Error:', err.message);
+    if (!res.headersSent) {
+      res.status(502).json({
+        error: 'EC2 Backend Connection Failed',
+        message: err.message,
+      });
+    }
   });
 
-  req.pipe(proxyReq, { end: true });
+  // Only pipe request body stream for data methods (POST, PUT, PATCH, DELETE)
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    req.pipe(proxyReq, { end: true });
+  } else {
+    proxyReq.end();
+  }
 }
