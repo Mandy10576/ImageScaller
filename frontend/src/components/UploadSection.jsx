@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, Sliders, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Sliders, AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { uploadImageApi } from '../services/api';
 
 const UploadSection = ({ onUploadSuccess }) => {
