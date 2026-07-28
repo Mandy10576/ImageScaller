@@ -12,6 +12,9 @@ const { errorConverter, errorHandler } = require('./middlewares/error.middleware
 
 const app = express();
 
+// Trust proxy headers from reverse proxies (Vercel, NGINX, Cloudflare)
+app.set('trust proxy', 1);
+
 // 1. Security Headers & CORS
 app.use(securityHeaders);
 app.use(corsMiddleware);
