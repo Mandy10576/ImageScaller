@@ -23,13 +23,12 @@ const errorConverter = (err, req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   let { statusCode, message } = err;
 
-  // In production, mask 500 internal errors to avoid leaking system implementation details
-  if (config.env === 'production' && !err.isOperational) {
-    statusCode = 500;
-    message = 'Internal Server Error';
+  // Ensure detailed error message is returned so client can report root cause
+  if (!message || message === 'Internal Server Error') {
+    message = err.message || 'An unexpected error occurred on the server';
   }
 
-  res.locals.errorMessage = err.message;
+  res.locals.errorMessage = message;
 
   const response = {
     success: false,
@@ -46,7 +45,7 @@ const errorHandler = (err, req, res, next) => {
     logger.warn(`[Client Error] ${req.method} ${req.originalUrl} - ${statusCode}: ${err.message}`);
   }
 
-  res.status(statusCode).send(response);
+  res.status(statusCode).json(response);
 };
 
 module.exports = {
