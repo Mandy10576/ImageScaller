@@ -9,12 +9,25 @@ import FeaturesSection from './components/FeaturesSection';
 export default function App() {
   const [activeTab, setActiveTab] = useState('editor'); // 'editor' | 'batch' | 'presets'
   const [selectedImage, setSelectedImage] = useState(null);
-  const [engine, setEngine] = useState('local'); // 'local' | 'removebg'
-  const [removeBgApiKey, setRemoveBgApiKey] = useState('');
+  
+  const [engine, setEngineState] = useState(() => {
+    return localStorage.getItem('SELECTED_ENGINE') || 'removebg';
+  });
+  
+  const [removeBgApiKey, setRemoveBgApiKey] = useState(() => {
+    return localStorage.getItem('REMOVE_BG_API_KEY') || '';
+  });
+
+  const setEngine = (newEngine) => {
+    setEngineState(newEngine);
+    localStorage.setItem('SELECTED_ENGINE', newEngine);
+  };
 
   useEffect(() => {
     const savedKey = localStorage.getItem('REMOVE_BG_API_KEY');
-    if (savedKey) setRemoveBgApiKey(savedKey);
+    if (savedKey) {
+      setRemoveBgApiKey(savedKey);
+    }
   }, []);
 
   const handleImageSelected = (imageSource) => {

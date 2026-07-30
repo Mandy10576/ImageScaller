@@ -1,8 +1,5 @@
-const axios = require('axios');
-const FormData = require('form-data');
-
 /**
- * Vercel Serverless Function handler for /api/removebg
+ * Native Vercel Serverless Function handler for /api/removebg
  */
 module.exports = async function handler(req, res) {
   // CORS Headers
@@ -15,8 +12,7 @@ module.exports = async function handler(req, res) {
   );
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
@@ -26,17 +22,17 @@ module.exports = async function handler(req, res) {
   try {
     const apiKey = req.headers['x-api-key'] || process.env.REMOVE_BG_API_KEY;
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       return res.status(400).json({
         success: false,
-        error: 'Remove.bg API Key is missing. Add REMOVE_BG_API_KEY in Vercel Environment Variables or enter key in UI Settings.',
+        error: 'rembg.com API Key is missing. Add REMOVE_BG_API_KEY in Vercel Environment Variables or enter key in UI Settings.',
       });
     }
 
-    const formData = new FormData();
     const size = req.body?.size || 'auto';
     const type = req.body?.type || 'auto';
 
+    const formData = new FormData();
     formData.append('size', size);
     formData.append('type', type);
 
@@ -48,34 +44,30 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'No image data provided.' });
     }
 
-    const response = await axios.post('https://api.remove.bg/v1.0/removebg', formData, {
+    const apiRes = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
       headers: {
-        ...formData.getHeaders(),
         'X-Api-Key': apiKey.trim(),
       },
-      responseType: 'arraybuffer',
+      body: formData,
     });
 
-    const imageBuffer = Buffer.from(response.data, 'binary');
-    const base64Image = `data:image/png;base64,${imageBuffer.toString('base64')}`;
+    if (!apiRes.ok) {
+      const errJson = await apiRes.json().catch(() => ({}));
+      const errMsg = errJson.errors ? errJson.errors.map((e) => e.title).join(', ') : apiRes.statusText;
+      return res.status(apiRes.status || 400).json({ success: false, error: `rembg.com API Error: ${errMsg}` });
+    }
+
+    const arrayBuffer = await apiRes.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Image = `data:image/png;base64,${buffer.toString('base64')}`;
 
     return res.status(200).json({
       success: true,
-      message: 'Background removed successfully via Remove.bg API',
+      message: 'Background removed successfully via rembg.com API',
       dataUrl: base64Image,
     });
   } catch (error) {
-    let errorDetails = 'Remove.bg API processing failed';
-    if (error.response) {
-      try {
-        const errorJson = JSON.parse(error.response.data.toString('utf-8'));
-        errorDetails = errorJson.errors ? errorJson.errors.map((e) => e.title).join(', ') : errorDetails;
-      } catch (e) {
-        errorDetails = error.response.statusText || errorDetails;
-      }
-      return res.status(error.response.status || 400).json({ success: false, error: errorDetails });
-    }
-
-    return res.status(500).json({ success: false, error: error.message || errorDetails });
+    return res.status(500).json({ success: false, error: error.message || 'Server processing error' });
   }
 };
