@@ -8,7 +8,6 @@ import { removeBackground } from '@imgly/background-removal';
 /**
  * Convert any File, Blob, or Image URL into a Base64 data string
  */
-
 export async function imageToBase64(imageInput) {
   if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
     return imageInput.split(',')[1];
@@ -42,16 +41,34 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
   onProgress(15);
 
   const cleanKey = apiKey ? apiKey.trim() : '';
-  const base64Data = await imageToBase64(imageInput);
+  let fileBlob = null;
+
+  if (imageInput instanceof File || imageInput instanceof Blob) {
+    fileBlob = imageInput;
+  } else if (typeof imageInput === 'string') {
+    onProgress(25);
+    try {
+      const fetchRes = await fetch(imageInput);
+      fileBlob = await fetchRes.blob();
+    } catch (e) {
+      console.warn('Failed to fetch image input directly:', e);
+    }
+  }
 
   onProgress(40);
 
-  // Try direct browser request first if client API key is entered in UI Settings
+  // Strategy 1: If client entered API key in UI Settings, try direct call to Remove.bg API first
   if (cleanKey) {
     try {
       onProgress(50);
       const directFormData = new FormData();
-      directFormData.append('image_file_b64', base64Data);
+
+      if (fileBlob) {
+        directFormData.append('image_file', fileBlob, 'image.png');
+      } else {
+        const b64 = await imageToBase64(imageInput);
+        directFormData.append('image_file_b64', b64);
+      }
       directFormData.append('size', 'auto');
 
       const directRes = await fetch('https://api.remove.bg/v1.0/removebg', {
@@ -73,18 +90,28 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
       onProgress(100);
       return blob;
     } catch (directErr) {
-      console.warn('Direct browser API call failed, trying server endpoint fallback...', directErr.message);
+      console.warn('Direct browser API call failed, trying server proxy fallback...', directErr.message);
       if (!directErr.message.includes('Failed to fetch')) {
         throw directErr;
       }
     }
   }
 
-  // Server endpoint proxy call (works via Vercel Serverless Function or Express server)
+  // Strategy 2: Call backend proxy via Multipart FormData (Supports large files up to 50MB)
   onProgress(60);
-  const endpoint = '/api/removebg';
-  const headers = { 'Content-Type': 'application/json' };
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const endpoint = `${apiBaseUrl}/api/v1/removebg`;
+  
+  const formData = new FormData();
+  if (fileBlob) {
+    formData.append('file', fileBlob, 'image.png');
+  } else {
+    const b64 = await imageToBase64(imageInput);
+    formData.append('image_file_b64', b64);
+  }
+  formData.append('size', 'auto');
 
+  const headers = { Accept: 'application/json' };
   if (cleanKey) {
     headers['X-Api-Key'] = cleanKey;
   }
@@ -92,10 +119,7 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
   const response = await fetch(endpoint, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      image_file_b64: base64Data,
-      size: 'auto',
-    }),
+    body: formData,
   });
 
   onProgress(85);
@@ -130,7 +154,6 @@ export async function processBackgroundRemoval(imageInput, onProgress = () => {}
       } catch (removeBgError) {
         console.warn('rembg.com API failed, falling back to local browser AI:', removeBgError.message);
         onProgress(30);
-        // Fallback to local neural model if remove.bg key is invalid or quota reached
         blob = await removeBackground(imageInput, {
           progress: (key, current, total) => {
             if (total > 0) onProgress(Math.min(95, Math.round(30 + (current / total) * 65)));

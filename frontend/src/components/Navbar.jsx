@@ -1,204 +1,85 @@
-import React, { useState } from 'react';
-import { Layers, Image as ImageIcon, Sliders, Settings, Key, Check, Scissors, Cpu, Cloud, Plus, X } from 'lucide-react';
+import React from 'react';
+import { Sparkles, Layers, Activity, Cpu, Database, Server, GitFork, ArrowUpRight } from 'lucide-react';
 
-export default function Navbar({
-  activeTab,
-  setActiveTab,
-  onReset,
-  hasActiveImage,
-  engine,
-  setEngine,
-  removeBgApiKey,
-  setRemoveBgApiKey
-}) {
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [tempKey, setTempKey] = useState(removeBgApiKey || '');
-
-  const handleSaveSettings = (e) => {
-    e.preventDefault();
-    setRemoveBgApiKey(tempKey.trim());
-    localStorage.setItem('REMOVE_BG_API_KEY', tempKey.trim());
-    setShowSettingsModal(false);
-  };
-
+export default function Navbar({ activeTab, setActiveTab, onOpenArchitecture, healthData }) {
   return (
-    <>
-      <header className="sticky top-0 z-40 studio-header">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between py-2.5">
-          
-          {/* Brand Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('editor')}>
-            <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-white shadow-sm">
-              <Scissors className="w-4 h-4 text-blue-400" />
-            </div>
+    <header className="sticky top-0 z-50 studio-header">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between py-2.5">
+        
+        {/* Brand Logo & Title */}
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('studio')}>
+          <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-sm">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
             <div className="flex items-center space-x-2">
-              <span className="text-base font-bold tracking-tight text-white">ClearCut</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-mono">
-                Studio
+              <span className="text-base font-bold tracking-tight text-white">SuperRes</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono">
+                Real-ESRGAN
               </span>
             </div>
-          </div>
-
-          {/* Center Mode Segmented Control */}
-          <nav className="segmented-control hidden md:flex items-center">
-            <button
-              onClick={() => setActiveTab('editor')}
-              className={`segmented-control-btn flex items-center space-x-1.5 ${activeTab === 'editor' ? 'active' : ''}`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Editor Workbench</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('batch')}
-              className={`segmented-control-btn flex items-center space-x-1.5 ${activeTab === 'batch' ? 'active' : ''}`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Batch Queue</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('presets')}
-              className={`segmented-control-btn flex items-center space-x-1.5 ${activeTab === 'presets' ? 'active' : ''}`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Preset Gallery</span>
-            </button>
-          </nav>
-
-          {/* Right Engine Selector & Controls */}
-          <div className="flex items-center space-x-2.5">
-            {/* AI Engine Switcher */}
-            <div className="segmented-control hidden sm:flex items-center">
-              <button
-                onClick={() => setEngine('local')}
-                className={`segmented-control-btn flex items-center space-x-1 ${engine === 'local' ? 'active' : ''}`}
-              >
-                <Cpu className="w-3 h-3 text-emerald-400" />
-                <span>Local WASM</span>
-              </button>
-              <button
-                onClick={() => setEngine('removebg')}
-                className={`segmented-control-btn flex items-center space-x-1 ${engine === 'removebg' ? 'active' : ''}`}
-              >
-                <Cloud className="w-3 h-3 text-blue-400" />
-                <span>rembg.com API</span>
-              </button>
-            </div>
-
-            {/* Key Settings Button */}
-            <button
-              onClick={() => {
-                setTempKey(removeBgApiKey || '');
-                setShowSettingsModal(true);
-              }}
-              className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/80 transition-colors"
-              title="Configure rembg.com API Key"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-
-            {hasActiveImage && (
-              <button
-                onClick={onReset}
-                className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Image</span>
-              </button>
-            )}
+            <p className="text-[10px] text-zinc-400 hidden sm:block">
+              Neural AI Image Super-Resolution Service
+            </p>
           </div>
         </div>
-      </header>
 
-      {/* rembg.com API Settings Modal Overlay */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto min-h-screen">
-          <div className="bg-zinc-900 p-6 rounded-2xl max-w-md w-full border border-zinc-700/90 shadow-2xl relative my-auto">
-            {/* Top Close Button */}
-            <button
-              type="button"
-              onClick={() => setShowSettingsModal(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+        {/* Center Mode Navigation */}
+        <nav className="segmented-control hidden md:flex items-center">
+          <button
+            onClick={() => setActiveTab('studio')}
+            className={`segmented-control-btn flex items-center space-x-1.5 ${activeTab === 'studio' ? 'active' : ''}`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI Upscaler</span>
+          </button>
 
-            <div className="flex items-center space-x-3 mb-5 pr-6">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800 text-blue-400 border border-zinc-700 flex items-center justify-center shrink-0">
-                <Key className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Engine & API Settings</h3>
-                <p className="text-xs text-zinc-400">Configure background removal engine parameters</p>
-              </div>
+          <button
+            onClick={() => setActiveTab('jobs')}
+            className={`segmented-control-btn flex items-center space-x-1.5 ${activeTab === 'jobs' ? 'active' : ''}`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Job Monitor</span>
+          </button>
+
+          <button
+            onClick={onOpenArchitecture}
+            className="segmented-control-btn flex items-center space-x-1.5 text-blue-400 hover:text-blue-300"
+          >
+            <GitFork className="w-3.5 h-3.5" />
+            <span>Architecture Flow</span>
+          </button>
+        </nav>
+
+        {/* Right System Status Indicators */}
+        <div className="flex items-center space-x-2">
+          {/* Health Badges */}
+          <div className="hidden lg:flex items-center space-x-2 bg-zinc-900/90 px-3 py-1 rounded-xl border border-zinc-800 text-[11px]">
+            <div className="flex items-center space-x-1" title="PostgreSQL Database">
+              <Database className="w-3 h-3 text-emerald-400" />
+              <span className="text-zinc-300 font-medium">Postgres</span>
             </div>
-
-            <form onSubmit={handleSaveSettings} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-2">
-                  Primary Processing Engine
-                </label>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setEngine('local')}
-                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all ${
-                      engine === 'local' ? 'bg-blue-600/20 border-blue-500 text-white font-bold' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                    }`}
-                  >
-                    <div className="font-semibold mb-0.5">Local WASM</div>
-                    <div className="text-[10px] text-zinc-400">Free, unlimited, private</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEngine('removebg')}
-                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all ${
-                      engine === 'removebg' ? 'bg-blue-600/20 border-blue-500 text-white font-bold' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                    }`}
-                  >
-                    <div className="font-semibold mb-0.5">rembg.com API</div>
-                    <div className="text-[10px] text-zinc-400">Cloud precision rendering</div>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  rembg.com API Key
-                </label>
-                <input
-                  type="password"
-                  placeholder="Paste your rembg.com API key..."
-                  value={tempKey}
-                  onChange={(e) => setTempKey(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-700 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-blue-500"
-                />
-                <p className="text-[11px] text-zinc-400 mt-1.5">
-                  Saved key is encrypted locally in your browser or used via server environment.
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-3 border-t border-zinc-800">
-                <button
-                  type="button"
-                  onClick={() => setShowSettingsModal(false)}
-                  className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition-colors"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
-                </button>
-              </div>
-            </form>
+            <span className="text-zinc-600">•</span>
+            <div className="flex items-center space-x-1" title="BullMQ & Redis Queue">
+              <Server className="w-3 h-3 text-purple-400" />
+              <span className="text-zinc-300 font-medium">Redis</span>
+            </div>
+            <span className="text-zinc-600">•</span>
+            <div className="flex items-center space-x-1" title="Python FastAPI AI Service (Port 8000)">
+              <Cpu className="w-3 h-3 text-blue-400 animate-pulse" />
+              <span className="text-zinc-300 font-medium">Python AI</span>
+            </div>
           </div>
+
+          <button
+            onClick={onOpenArchitecture}
+            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 text-xs font-semibold flex items-center space-x-1 transition-colors"
+          >
+            <span>Flow</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
+          </button>
         </div>
-      )}
-    </>
+      </div>
+    </header>
   );
 }
