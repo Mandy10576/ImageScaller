@@ -25,7 +25,7 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
       const fetchRes = await fetch(imageInput);
       fileBlob = await fetchRes.blob();
     } catch (e) {
-      console.warn('Failed to fetch image input string directly, trying raw URL send:', e);
+      console.warn('Failed to fetch image string input directly:', e);
     }
   }
 
@@ -43,7 +43,9 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
 
   onProgress(40);
 
-  const endpoint = '/api/v1/removebg';
+  // Determine API endpoint base URL for local & production hosting (Vercel, Render, Netlify)
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const endpoint = `${apiBaseUrl}/api/v1/removebg`;
   const headers = {};
 
   if (cleanKey) {
@@ -62,10 +64,11 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
 
     onProgress(80);
 
-    const json = await response.json();
+    const json = await response.json().catch(() => ({}));
 
     if (!response.ok || !json.success) {
-      throw new Error(json.message || json.error || 'rembg.com API call failed');
+      const errDetail = json.message || json.error || `HTTP ${response.status} Error from server`;
+      throw new Error(errDetail);
     }
 
     const dataUrl = json.dataUrl;
@@ -75,9 +78,9 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
     onProgress(100);
     return blob;
   } catch (backendErr) {
-    console.warn('Backend proxy failed, attempting direct API request fallback...', backendErr);
+    console.warn('Backend proxy endpoint failed, checking client key fallback...', backendErr.message);
 
-    // Direct client-side request fallback to API if user entered API Key in client UI
+    // Direct client-side request fallback to API if user entered API Key in browser UI
     if (cleanKey) {
       const directFormData = new FormData();
       if (fileBlob) {
@@ -435,7 +438,7 @@ export async function renderCompositeImage({
 
     shadowCtx.drawImage(cutoutImg, 0, 0);
 
-    ctx.drawImage(shadowCanvas, drawX, drawY);
+    ctx.drawImage(shadowCanvas, drawX - 0, drawY - 0);
     ctx.restore();
   }
 
