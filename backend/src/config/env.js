@@ -1,9 +1,20 @@
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
 const os = require('os');
 
-// Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Load environment variables from local .env or root .env
+const envPaths = [
+  path.join(__dirname, '../.env'),
+  path.join(__dirname, '../../.env'),
+  path.join(process.cwd(), '.env'),
+];
+
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  }
+}
 
 const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 const tmpDir = os.tmpdir();
