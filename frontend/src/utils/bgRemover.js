@@ -1,41 +1,53 @@
 /**
  * AI Background Removal & Image Compositing Engine for ClearCut AI Studio
- * Supports Local In-Browser Neural AI + Official Remove.bg API
+ * Supports Local In-Browser Neural AI + Official rembg.com / Remove.bg API
  */
 
 import { removeBackground } from '@imgly/background-removal';
 
 /**
- * Remove background via official Remove.bg API
+ * Remove background via official rembg.com / Remove.bg API
  */
 export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', onProgress = () => {}) {
-  onProgress(20);
+  onProgress(15);
 
   const formData = new FormData();
+  const cleanKey = apiKey ? apiKey.trim() : '';
 
-  if (typeof imageInput === 'string') {
+  // Ensure imageInput is converted into a binary File/Blob for 100% reliable upload
+  let fileBlob = null;
+
+  if (imageInput instanceof File || imageInput instanceof Blob) {
+    fileBlob = imageInput;
+  } else if (typeof imageInput === 'string') {
+    onProgress(25);
+    try {
+      const fetchRes = await fetch(imageInput);
+      fileBlob = await fetchRes.blob();
+    } catch (e) {
+      console.warn('Failed to fetch image input string directly, trying raw URL send:', e);
+    }
+  }
+
+  if (fileBlob) {
+    formData.append('file', fileBlob, 'image.png');
+  } else if (typeof imageInput === 'string') {
     if (imageInput.startsWith('data:')) {
-      // Base64 data string
-      const base64Data = imageInput.split(',')[1];
-      formData.append('image_file_b64', base64Data);
+      formData.append('image_file_b64', imageInput.split(',')[1]);
     } else {
-      // Remote image URL
       formData.append('image_url', imageInput);
     }
-  } else if (imageInput instanceof File || imageInput instanceof Blob) {
-    formData.append('file', imageInput);
   }
 
   formData.append('size', 'auto');
 
   onProgress(40);
 
-  // Try calling local proxy backend if apiKey is not directly supplied in browser
-  let endpoint = '/api/v1/removebg';
+  const endpoint = '/api/v1/removebg';
   const headers = {};
 
-  if (apiKey) {
-    headers['X-Api-Key'] = apiKey;
+  if (cleanKey) {
+    headers['X-Api-Key'] = cleanKey;
   }
 
   try {
@@ -53,7 +65,7 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
     const json = await response.json();
 
     if (!response.ok || !json.success) {
-      throw new Error(json.message || json.error || 'Remove.bg API call failed');
+      throw new Error(json.message || json.error || 'rembg.com API call failed');
     }
 
     const dataUrl = json.dataUrl;
@@ -63,25 +75,25 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
     onProgress(100);
     return blob;
   } catch (backendErr) {
-    console.warn('Backend proxy failed, attempting direct Remove.bg API request...', backendErr);
+    console.warn('Backend proxy failed, attempting direct API request fallback...', backendErr);
 
-    // Direct client-side request fallback to Remove.bg API if user entered API Key
-    if (apiKey) {
+    // Direct client-side request fallback to API if user entered API Key in client UI
+    if (cleanKey) {
       const directFormData = new FormData();
-      if (typeof imageInput === 'string') {
+      if (fileBlob) {
+        directFormData.append('image_file', fileBlob, 'image.png');
+      } else if (typeof imageInput === 'string') {
         if (imageInput.startsWith('data:')) {
           directFormData.append('image_file_b64', imageInput.split(',')[1]);
         } else {
           directFormData.append('image_url', imageInput);
         }
-      } else {
-        directFormData.append('image_file', imageInput);
       }
 
       const directRes = await fetch('https://api.remove.bg/v1.0/removebg', {
         method: 'POST',
         headers: {
-          'X-Api-Key': apiKey,
+          'X-Api-Key': cleanKey,
         },
         body: directFormData,
       });
@@ -89,7 +101,7 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
       if (!directRes.ok) {
         const errJson = await directRes.json().catch(() => ({}));
         const errMsg = errJson.errors ? errJson.errors.map((e) => e.title).join(', ') : directRes.statusText;
-        throw new Error(`Remove.bg API Error: ${errMsg}`);
+        throw new Error(`rembg.com API Error: ${errMsg}`);
       }
 
       const blob = await directRes.blob();
@@ -102,7 +114,7 @@ export async function removeBackgroundViaRemoveBgAPI(imageInput, apiKey = '', on
 }
 
 /**
- * Main function to remove background from an image source using Local AI or Remove.bg API.
+ * Main function to remove background from an image source using Local AI or rembg.com API.
  */
 export async function processBackgroundRemoval(imageInput, onProgress = () => {}, options = {}) {
   const { engine = 'local', apiKey = '' } = options;
@@ -115,7 +127,7 @@ export async function processBackgroundRemoval(imageInput, onProgress = () => {}
       try {
         blob = await removeBackgroundViaRemoveBgAPI(imageInput, apiKey, onProgress);
       } catch (removeBgError) {
-        console.warn('Remove.bg API failed, falling back to local browser AI:', removeBgError.message);
+        console.warn('rembg.com API failed, falling back to local browser AI:', removeBgError.message);
         onProgress(30);
         // Fallback to local neural model if remove.bg key is invalid or quota reached
         blob = await removeBackground(imageInput, {
@@ -173,9 +185,6 @@ export async function processBackgroundRemoval(imageInput, onProgress = () => {}
   }
 }
 
-/**
- * Load an image URL into an HTMLImageElement
- */
 export function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -186,9 +195,6 @@ export function loadImage(src) {
   });
 }
 
-/**
- * High-performance smart canvas matting & color distance segmentation fallback.
- */
 async function smartCanvasSegmentationFallback(imageInput, onProgress) {
   let img;
   if (typeof imageInput === 'string') {
