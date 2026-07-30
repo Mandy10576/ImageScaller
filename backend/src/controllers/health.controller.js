@@ -27,9 +27,9 @@ class HealthController {
           port: config.redis.port,
           password: config.redis.password,
           connectTimeout: 1000,
-          maxRetriesPerRequest: 1,
+          // maxRetriesPerRequest: 1,
           retryStrategy: () => null,
-          enableOfflineQueue: false,
+          // enableOfflineQueue: false,
         });
 
         client.on('error', (e) => {

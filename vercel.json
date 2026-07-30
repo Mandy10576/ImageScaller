@@ -3,12 +3,16 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/api/removebg",
-      "destination": "/api/removebg.js"
+      "source": "/api/v1/:path*",
+      "destination": "http://ec2-3.109.122.52.ap-south-1.compute.amazonaws.com:5000/api/v1/:path*"
     },
     {
-      "source": "/api/v1/removebg",
-      "destination": "/api/removebg.js"
+      "source": "/uploads/:path*",
+      "destination": "http://ec2-3.109.122.52.ap-south-1.compute.amazonaws.com:5000/uploads/:path*"
+    },
+    {
+      "source": "/outputs/:path*",
+      "destination": "http://ec2-3.109.122.52.ap-south-1.compute.amazonaws.com:5000/outputs/:path*"
     },
     {
       "source": "/(.*)",
