@@ -107,7 +107,7 @@ class RealESRGANEngine:
                     scale=4,
                     model_path=weights_path if os.path.exists(weights_path) else None,
                     model=model,
-                    tile=400,
+                    tile=200,
                     tile_pad=10,
                     pre_pad=0,
                     half=use_half,
@@ -138,7 +138,15 @@ class RealESRGANEngine:
 
         # Execute inference in PyTorch no_grad / inference_mode for maximum CPU speed
         with torch.inference_mode():
-            output, _ = self.upsampler.enhance(img_np, outscale=scale)
+            try:
+                output, _ = self.upsampler.enhance(img_np, outscale=scale)
+            except Exception as enhance_err:
+                print(f"[AI Service] Tiled enhance warning ({enhance_err}), retrying with full tensor inference...")
+                # Temporarily disable tiling for edge cases where tile split results in 0-size dimension
+                original_tile = self.upsampler.tile
+                self.upsampler.tile = 0
+                output, _ = self.upsampler.enhance(img_np, outscale=scale)
+                self.upsampler.tile = original_tile
 
         target_h, target_w = output.shape[:2]
         print(f"Saving output image (upscaled size: {target_w}x{target_h})...", flush=True)
