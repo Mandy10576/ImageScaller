@@ -4,15 +4,15 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "http://13.204.45.189:5000/api/v1/:path*"
+      "destination": "http://13.201.184.71:5000/api/v1/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "http://13.204.45.189:5000/uploads/:path*"
+      "destination": "http://13.201.184.71:5000/uploads/:path*"
     },
     {
       "source": "/outputs/:path*",
-      "destination": "http://13.204.45.189:5000/outputs/:path*"
+      "destination": "http://13.201.184.71:5000/outputs/:path*"
     },
     {
       "source": "/(.*)",
