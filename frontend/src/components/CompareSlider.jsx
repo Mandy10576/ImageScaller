@@ -5,7 +5,20 @@ export default function CompareSlider({ originalUrl, upscaledUrl, scale = 4 }) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleMove = (clientX) => {
     if (!containerRef.current) return;
@@ -105,7 +118,7 @@ export default function CompareSlider({ originalUrl, upscaledUrl, scale = 4 }) {
               alt="Original Low-Res"
               className="max-h-[520px] w-auto object-contain max-w-none block"
               style={{
-                width: containerRef.current?.offsetWidth || 'auto',
+                width: containerWidth ? `${containerWidth}px` : '100%',
               }}
             />
             <span className="absolute top-3 left-3 px-2 py-1 bg-black/75 backdrop-blur-md rounded text-[10px] font-bold text-zinc-300 uppercase tracking-wider border border-zinc-700">
