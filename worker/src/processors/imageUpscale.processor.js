@@ -64,6 +64,9 @@ const startWorker = () => {
     {
       connection: redisOptions,
       concurrency: config.worker.concurrency, // Concurrency limit = 3
+      lockDuration: 600000, // 10 minutes lock duration for long-running AI inference
+      stalledInterval: 600000, // Check stalled jobs every 10 minutes
+      maxStalledCount: 3,
     }
   );
 
