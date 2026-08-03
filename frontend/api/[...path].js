@@ -7,8 +7,8 @@ export const config = {
 };
 
 export default function handler(req, res) {
-  const ec2Host = '3.109.122.52';
-  const ec2Port = 5000;
+  const ec2Host = process.env.EC2_HOST || '13.204.45.189';
+  const ec2Port = process.env.EC2_PORT || 5000;
 
   const targetPath = req.url.startsWith('/api') ? req.url : `/api${req.url}`;
 
