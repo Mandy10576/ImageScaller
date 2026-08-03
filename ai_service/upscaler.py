@@ -4,6 +4,11 @@ import time
 import urllib.request
 from PIL import Image, ImageEnhance, ImageFilter
 
+# Optimize CPU multi-threading for PyTorch / OpenMP / MKL
+os.environ['OMP_NUM_THREADS'] = '2'
+os.environ['MKL_NUM_THREADS'] = '2'
+os.environ['OPENBLAS_NUM_THREADS'] = '2'
+
 # Patch torchvision functional_tensor for compatibility with basicsr/torchvision
 try:
     import torchvision.transforms.functional as F
@@ -19,6 +24,12 @@ try:
     import numpy as np
     from realesrgan import RealESRGANer
     from basicsr.archs.rrdbnet_arch import RRDBNet
+    
+    try:
+        torch.set_num_threads(2)
+    except Exception:
+        pass
+
     HAS_REALESRGAN = True
     print("[AI Service] Official xinntao/Real-ESRGAN (PyTorch + BasicSR) initialized successfully!")
 except ImportError:
@@ -96,7 +107,7 @@ class RealESRGANEngine:
                     scale=4,
                     model_path=weights_path if os.path.exists(weights_path) else None,
                     model=model,
-                    tile=200,
+                    tile=400,
                     tile_pad=10,
                     pre_pad=0,
                     half=use_half,
@@ -124,7 +135,10 @@ class RealESRGANEngine:
         orig_h, orig_w = img_np.shape[:2]
 
         print(f"Enhancing image (original size: {orig_w}x{orig_h})...", flush=True)
-        output, _ = self.upsampler.enhance(img_np, outscale=scale)
+
+        # Execute inference in PyTorch no_grad / inference_mode for maximum CPU speed
+        with torch.inference_mode():
+            output, _ = self.upsampler.enhance(img_np, outscale=scale)
 
         target_h, target_w = output.shape[:2]
         print(f"Saving output image (upscaled size: {target_w}x{target_h})...", flush=True)
