@@ -66,7 +66,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error submitting job:', err);
-      alert('Failed to submit job to queue. Ensure Express server and Redis are running.');
+      alert(err.message || 'Failed to submit job to queue. Ensure Express server and Redis are running.');
     } finally {
       setIsSubmitting(false);
     }
