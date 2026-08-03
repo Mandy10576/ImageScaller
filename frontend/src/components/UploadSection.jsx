@@ -109,9 +109,7 @@ export default function UploadSection({ onUploadSubmit, isSubmitting }) {
             onChange={(e) => setModel(e.target.value)}
             className="bg-zinc-900 border border-zinc-700 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-500 font-mono"
           >
-            <option value="realesrgan-x4plus">Real-ESRGAN-x4plus (General Photos)</option>
-            <option value="realesrgan-anime">RealESRGAN_x4plus_anime_6B (Anime/Art)</option>
-            <option value="realesrgan-general">RealESRGAN-general-x4v3 (Fast)</option>
+            <option value="realesrgan-x4plus">Real-ESRGAN-x4plus (v0.1.0)</option>
           </select>
         </div>
 

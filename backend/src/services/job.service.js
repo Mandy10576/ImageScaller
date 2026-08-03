@@ -6,7 +6,6 @@ const logger = require('../utils/logger');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
-const { ImageEnhance, ImageFilter } = require('canvas'); // Or PIL / Sharp fallback
 
 class JobService {
   /**

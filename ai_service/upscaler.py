@@ -1,7 +1,15 @@
+import sys
 import os
 import time
 import urllib.request
 from PIL import Image, ImageEnhance, ImageFilter
+
+# Patch torchvision functional_tensor for compatibility with basicsr/torchvision
+try:
+    import torchvision.transforms.functional as F
+    sys.modules['torchvision.transforms.functional_tensor'] = F
+except Exception:
+    pass
 
 # Check if official xinntao/Real-ESRGAN PyTorch packages are installed
 HAS_REALESRGAN = False
@@ -18,8 +26,7 @@ except ImportError:
 
 MODEL_URLS = {
     "realesrgan-x4plus": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
-    "realesrgan-anime": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
-    "realesrgan-general": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-general-x4v3.pth"
+    "RealESRGAN_x4plus": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
 }
 
 class RealESRGANEngine:
@@ -42,6 +49,12 @@ class RealESRGANEngine:
         filename = f"{model_name}.pth"
         weights_path = os.path.join(self.weights_dir, filename)
 
+        # Check alternative filenames (e.g. RealESRGAN_x4plus.pth vs realesrgan-x4plus.pth)
+        if not os.path.exists(weights_path):
+            alt_path = os.path.join(self.weights_dir, "RealESRGAN_x4plus.pth")
+            if os.path.exists(alt_path):
+                return alt_path
+
         if not os.path.exists(weights_path):
             url = MODEL_URLS.get(model_name, MODEL_URLS["realesrgan-x4plus"])
             print(f"[AI Service] Downloading xinntao/Real-ESRGAN model weights from {url}...")
@@ -60,11 +73,21 @@ class RealESRGANEngine:
             try:
                 weights_path = self._download_weights_if_needed(self.model_name)
                 
-                # RRDBNet architecture from xinntao/Real-ESRGAN
-                if self.model_name == "realesrgan-anime":
-                    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
-                else:
-                    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+                # RRDBNet architecture from xinntao/Real-ESRGAN (RealESRGAN_x4plus)
+                model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+
+                if os.path.exists(weights_path):
+                    load_net = torch.load(weights_path, map_location=torch.device('cpu'))
+                    if 'params_ema' in load_net:
+                        keyname = 'params_ema'
+                    elif 'params' in load_net:
+                        keyname = 'params'
+                    else:
+                        keyname = None
+                    if keyname:
+                        model.load_state_dict(load_net[keyname], strict=True)
+                    else:
+                        model.load_state_dict(load_net, strict=True)
 
                 use_half = torch.cuda.is_available()
                 gpu_id = 0 if torch.cuda.is_available() else None
@@ -73,7 +96,7 @@ class RealESRGANEngine:
                     scale=4,
                     model_path=weights_path if os.path.exists(weights_path) else None,
                     model=model,
-                    tile=0,
+                    tile=200,
                     tile_pad=10,
                     pre_pad=0,
                     half=use_half,
@@ -87,7 +110,7 @@ class RealESRGANEngine:
 
     def upscale_image(self, input_path: str, output_path: str, scale: int = 4, model_name: str = "realesrgan-x4plus") -> dict:
         """
-        Upscales an image from input_path to output_path using official xinntao/Real-ESRGAN PyTorch engine.
+        Upscales an image from input_path to output_path using official RealESRGAN_x4plus PyTorch engine.
         """
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"Input file not found: {input_path}")
@@ -95,54 +118,25 @@ class RealESRGANEngine:
         start_time = time.time()
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-        orig_w, orig_h = 0, 0
-        target_w, target_h = 0, 0
+        print(f"Loading {input_path}...", flush=True)
+        img = Image.open(input_path).convert('RGB')
+        img_np = np.array(img)
+        orig_h, orig_w = img_np.shape[:2]
 
-        # Method 1: Official xinntao/Real-ESRGAN PyTorch Inference
-        if HAS_REALESRGAN and self.upsampler is not None:
-            try:
-                img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
-                orig_h, orig_w = img.shape[:2]
+        print(f"Enhancing image (original size: {orig_w}x{orig_h})...", flush=True)
+        output, _ = self.upsampler.enhance(img_np, outscale=scale)
 
-                output, _ = self.upsampler.enhance(img, outscale=scale)
-                cv2.imwrite(output_path, output)
-
-                target_h, target_w = output.shape[:2]
-                exec_time_ms = int((time.time() - start_time) * 1000)
-
-                return {
-                    "success": True,
-                    "engine": "official-xinntao-realesrgan-pytorch",
-                    "original_resolution": [orig_w, orig_h],
-                    "upscaled_resolution": [target_w, target_h],
-                    "scale": scale,
-                    "execution_time_ms": exec_time_ms,
-                    "output_path": output_path
-                }
-            except Exception as e:
-                print(f"[AI Service] PyTorch inference error ({e}), switching to high-quality Lanczos/Unsharp super-resolution.")
-
-        # Method 2: High-Quality Lanczos + Neural Micro-Sharpening Super-Resolution
-        with Image.open(input_path) as img:
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-
-            orig_w, orig_h = img.size
-            target_w = orig_w * scale
-            target_h = orig_h * scale
-
-            upscaled = img.resize((target_w, target_h), resample=Image.Resampling.LANCZOS)
-            sharpened = upscaled.filter(ImageFilter.UnsharpMask(radius=2, percent=160, threshold=3))
-            enhancer = ImageEnhance.Contrast(sharpened)
-            enhanced = enhancer.enhance(1.08)
-
-            enhanced.save(output_path, quality=95, optimize=True)
+        target_h, target_w = output.shape[:2]
+        print(f"Saving output image (upscaled size: {target_w}x{target_h})...", flush=True)
+        output_img = Image.fromarray(output)
+        output_img.save(output_path)
+        print(f"Successfully generated {output_path}!", flush=True)
 
         exec_time_ms = int((time.time() - start_time) * 1000)
 
         return {
             "success": True,
-            "engine": "realesrgan-tensor-superres",
+            "engine": "official-RealESRGAN_x4plus",
             "original_resolution": [orig_w, orig_h],
             "upscaled_resolution": [target_w, target_h],
             "scale": scale,

@@ -14,8 +14,14 @@ const startWorker = () => {
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {
-      const { jobId, inputPath, scale } = job.data;
+      const jobId = job.data?.jobId || job.data?.id;
+      const { inputPath, scale } = job.data || {};
       logger.info(`[Worker] Picked up job ${jobId} (BullMQ Job ${job.id})`);
+
+      if (!jobId || !inputPath) {
+        logger.warn(`[Worker] Skipping job ${job.id} - missing jobId or inputPath in job data`);
+        return { jobId, skipped: true };
+      }
 
       // 1. Update Database Status -> PROCESSING
       await prisma.imageJob.update({

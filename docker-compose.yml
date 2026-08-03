@@ -31,6 +31,18 @@ services:
       timeout: 5s
       retries: 5
 
+  ai-service:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    container_name: upscaler-ai-service
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - shared_uploads:/app/uploads
+      - shared_outputs:/app/outputs
+
   backend:
     build:
       context: ./backend
@@ -44,6 +56,7 @@ services:
       DIRECT_URL: "postgresql://upscaler_user:upscaler_password@postgres:5432/upscaler_db"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      AI_SERVICE_URL: "http://ai-service:8000/upscale"
       UPLOAD_DIR: ./uploads
       OUTPUT_DIR: ./outputs
     ports:
@@ -69,6 +82,7 @@ services:
       DIRECT_URL: "postgresql://upscaler_user:upscaler_password@postgres:5432/upscaler_db"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      AI_SERVICE_URL: "http://ai-service:8000/upscale"
       UPLOAD_DIR: ./uploads
       OUTPUT_DIR: ./outputs
     volumes:
@@ -80,6 +94,8 @@ services:
       redis:
         condition: service_healthy
       backend:
+        condition: service_started
+      ai-service:
         condition: service_started
 
 volumes:

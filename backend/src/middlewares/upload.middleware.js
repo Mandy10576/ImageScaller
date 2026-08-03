@@ -1,6 +1,6 @@
 const multer = require('multer');
 const path = require('path');
-const { v4: uuidv4 } = require('crypto');
+const { randomUUID: uuidv4 } = require('crypto');
 const config = require('../config/env');
 const ApiError = require('../utils/ApiError');
 const { ensureDirSync } = require('../utils/fileSystem');

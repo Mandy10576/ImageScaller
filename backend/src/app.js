@@ -42,6 +42,22 @@ app.use('/outputs', express.static(path.resolve(config.storage.outputDir)));
 // 6. Swagger API Documentation Endpoint
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Root Endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: 'AI Image Upscaler REST API Server',
+    version: '1.0.0',
+    documentation: '/docs',
+    health: '/api/v1/health',
+    endpoints: {
+      upload_and_upscale: 'POST /api/v1/jobs',
+      get_job_status: 'GET /api/v1/jobs/:id',
+      list_recent_jobs: 'GET /api/v1/jobs'
+    }
+  });
+});
+
 // 7. API Routes
 app.use('/api/v1', routes);
 

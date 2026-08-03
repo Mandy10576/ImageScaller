@@ -35,3 +35,13 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Python bytecode & cache
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Heavy AI model weights (do not commit to Git)
+*.pth
+ai_service/weights/*.pth
+

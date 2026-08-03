@@ -2,25 +2,24 @@ const Redis = require('ioredis');
 const config = require('./env');
 
 function getRedisOptions() {
-  const host = process.env.REDIS_HOST || config.redis?.host || 'nice-racer-185411.upstash.io';
+  const host = process.env.REDIS_HOST || config.redis?.host || 'localhost';
   const port = parseInt(process.env.REDIS_PORT || config.redis?.port || '6379', 10);
-  const password = process.env.REDIS_PASSWORD || config.redis?.password || 'gQAAAAAAAtRDAAIgcDEyM2QyOGQ5YmFiZDg0ODU5YmMzZWE1MDZhNTNhNThkNA';
+  const password = process.env.REDIS_PASSWORD || config.redis?.password || undefined;
 
   const options = {
     host,
     port,
-    password,
     maxRetriesPerRequest: null, // Required by BullMQ
     enableReadyCheck: false,
     connectTimeout: 10000,
   };
 
-  if (
-    host.includes('upstash.io') ||
-    process.env.REDIS_URL?.includes('upstash.io') ||
-    process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.REDIS_TLS === 'true'
-  ) {
+  if (password) {
+    options.password = password;
+  }
+
+  const isLocal = host === 'localhost' || host === 'redis' || host === '127.0.0.1';
+  if (!isLocal && (host.includes('upstash.io') || process.env.REDIS_TLS === 'true')) {
     options.tls = { rejectUnauthorized: false };
   }
 

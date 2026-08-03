@@ -36,7 +36,8 @@ class RealESRGANService {
     if (onProgress) await onProgress(10);
     logger.info(`[Worker] Starting Real-ESRGAN ${scale}x upscaling for file: ${filename}`);
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/upscale';
+    let aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000/upscale';
+    aiServiceUrl = aiServiceUrl.replace('localhost', '127.0.0.1');
 
     // Step 1: Send REST API HTTP request to Python FastAPI AI Service (Real-ESRGAN loaded in memory)
     try {
@@ -56,16 +57,8 @@ class RealESRGANService {
       if (onProgress) await onProgress(100);
       return outputPath;
     } catch (err) {
-      logger.warn(`[Worker] Python AI Service request failed (${err.message}). Using local high-precision image fallback...`);
-
-      if (onProgress) await onProgress(50);
-      await new Promise((res) => setTimeout(res, 600));
-
-      if (onProgress) await onProgress(80);
-      fs.copyFileSync(absoluteInputPath, outputPath);
-
-      if (onProgress) await onProgress(100);
-      return outputPath;
+      logger.error(`[Worker] Python AI Service request failed (${err.message}).`);
+      throw new Error(`Real-ESRGAN upscaling failed: ${err.message}`);
     }
   }
 
@@ -86,7 +79,7 @@ class RealESRGANService {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(postData),
         },
-        timeout: 60000, // 60 sec timeout
+        timeout: 600000, // 10 min timeout for CPU Real-ESRGAN upscaling
       };
 
       const req = http.request(options, (res) => {
