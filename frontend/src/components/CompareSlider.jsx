@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Sliders, ZoomIn, ZoomOut, RotateCcw, Image as ImageIcon } from 'lucide-react';
 
 export default function CompareSlider({ originalUrl, upscaledUrl, scale = 4 }) {
+  const containerRef = useRef(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);

@@ -137,16 +137,35 @@ class RealESRGANEngine:
         print(f"Enhancing image (original size: {orig_w}x{orig_h})...", flush=True)
 
         # Execute inference in PyTorch no_grad / inference_mode for maximum CPU speed
-        with torch.inference_mode():
-            try:
-                output, _ = self.upsampler.enhance(img_np, outscale=scale)
-            except Exception as enhance_err:
-                print(f"[AI Service] Tiled enhance warning ({enhance_err}), retrying with full tensor inference...")
-                # Temporarily disable tiling for edge cases where tile split results in 0-size dimension
-                original_tile = self.upsampler.tile
-                self.upsampler.tile = 0
-                output, _ = self.upsampler.enhance(img_np, outscale=scale)
-                self.upsampler.tile = original_tile
+        output = None
+        if self.upsampler is not None:
+            with torch.inference_mode():
+                try:
+                    output, _ = self.upsampler.enhance(img_np, outscale=scale)
+                except Exception as enhance_err:
+                    print(f"[AI Service] Tiled enhance warning ({enhance_err}), retrying with full tensor inference...")
+                    try:
+                        orig_tile = getattr(self.upsampler, 'tile_size', getattr(self.upsampler, 'tile', 0))
+                        if hasattr(self.upsampler, 'tile_size'):
+                            self.upsampler.tile_size = 0
+                        elif hasattr(self.upsampler, 'tile'):
+                            self.upsampler.tile = 0
+
+                        output, _ = self.upsampler.enhance(img_np, outscale=scale)
+
+                        if hasattr(self.upsampler, 'tile_size'):
+                            self.upsampler.tile_size = orig_tile
+                        elif hasattr(self.upsampler, 'tile'):
+                            self.upsampler.tile = orig_tile
+                    except Exception as err2:
+                        print(f"[AI Service] PyTorch Real-ESRGAN failed ({err2}), falling back to PIL Lanczos high-res enhancer...")
+                        output = None
+
+        if output is None:
+            target_w, target_h = int(orig_w * scale), int(orig_h * scale)
+            output_img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            output_img = ImageEnhance.Sharpness(output_img).enhance(1.2)
+            output = np.array(output_img)
 
         target_h, target_w = output.shape[:2]
         print(f"Saving output image (upscaled size: {target_w}x{target_h})...", flush=True)

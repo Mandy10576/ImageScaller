@@ -23,7 +23,10 @@ export default function App() {
       try {
         const res = await jobApi.getJobById(activeJob.id);
         if (res && res.data) {
-          setActiveJob(res.data);
+          setActiveJob((prev) => ({
+            ...res.data,
+            originalUrl: prev?.originalUrl || res.data.originalUrl,
+          }));
           if (res.data.status === 'COMPLETED' || res.data.status === 'FAILED') {
             refreshJobsList();
           }

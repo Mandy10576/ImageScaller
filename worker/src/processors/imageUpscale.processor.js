@@ -81,9 +81,10 @@ const startWorker = () => {
 
   worker.on('failed', async (job, err) => {
     logger.error(`Job ${job?.id} FAILED with error: ${err.message}`);
-    if (job?.data?.jobId) {
+    const jobId = job?.data?.jobId || job?.data?.id;
+    if (jobId) {
       await prisma.imageJob.update({
-        where: { id: job.data.jobId },
+        where: { id: jobId },
         data: {
           status: 'FAILED',
           errorMessage: err.message,

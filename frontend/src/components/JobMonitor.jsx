@@ -106,10 +106,26 @@ export default function JobMonitor({ jobs, onRefresh, onDelete, onRetry }) {
                     <span className="text-sm font-bold text-white truncate">{job.originalName}</span>
                     {getStatusBadge(job.status)}
                   </div>
-                  <div className="flex items-center space-x-3 text-[11px] text-zinc-400 font-mono mt-1">
+                  <div className="flex items-center space-x-3 text-[11px] text-zinc-400 font-mono mt-1 flex-wrap gap-y-1">
                     <span>ID: {job.id.slice(0, 8)}...</span>
                     <span>•</span>
                     <span>Created: {new Date(job.createdAt).toLocaleTimeString()}</span>
+                    {job.completedAt && (
+                      <>
+                        <span>•</span>
+                        <span className="text-emerald-400">Completed: {new Date(job.completedAt).toLocaleTimeString()}</span>
+                        <span>•</span>
+                        <span className="text-blue-400">
+                          ⏱ {(() => {
+                            const ms = new Date(job.completedAt) - new Date(job.createdAt);
+                            const totalSec = Math.floor(ms / 1000);
+                            const min = Math.floor(totalSec / 60);
+                            const sec = totalSec % 60;
+                            return min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+                          })()}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: upscaler_password
       POSTGRES_DB: upscaler_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -98,8 +98,20 @@ services:
       ai-service:
         condition: service_started
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: upscaler-frontend
+    restart: always
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:
   shared_uploads:
   shared_outputs:
+
